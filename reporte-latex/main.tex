@@ -1,0 +1,270 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{svg}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage[authoryear]{natbib}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.8\baselineskip}
+
+\title{Comparación de Redes Metabólicas: Estado Sano vs. Estado Enfermo}
+\author{Javier Roberto Rubalcava Cortés\\Posgrado en ciencias Matemáticas, UNAM}
+\date{2026}
+
+\renewcommand{\refname}{Referencias}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Se compararon dos redes de rutas metabólicas reconstruidas a partir de datos metagenómicos, una correspondiente a individuos sanos y otra a individuos enfermos. Ambas redes comparten 619 nodos y fueron analizadas con NetworkX mediante métricas topológicas globales, análisis diferencial de aristas y pruebas estadísticas no paramétricas, complementadas con una prueba de permutación de 10,000 iteraciones. La red enferma presentó más aristas que la red sana (1,215 vs. 876), así como mayor densidad y mayor grado promedio. Aunque las distribuciones de grado no mostraron diferencias significativas en las pruebas no paramétricas clásicas, la prueba de permutación indicó una diferencia significativa en el grado promedio ($\Delta \bar{k} = 1.0953$, $p = 0.0067$). En conjunto, los resultados sugieren una reorganización topológica de las rutas metabólicas asociada al estado de enfermedad.
+\end{abstract}
+
+\section{Introducción}
+
+La metagenómica ha transformado nuestra capacidad de caracterizar las comunidades microbianas presentes en muestras ambientales y clínicas, ofreciendo acceso sin precedentes a la diversidad funcional del microbioma. En particular, la reconstrucción de redes de rutas metabólicas a partir de datos metagenómicos permite representar las capacidades bioquímicas colectivas de una comunidad microbiana como un grafo, donde los nodos son rutas metabólicas y las aristas reflejan co-ocurrencia o interacción funcional entre ellas \citep{mathieu2023insight}.
+
+El análisis diferencial de redes biológicas (comparar la topología de una red en dos condiciones) ha emergido como un enfoque poderoso para identificar reorganizaciones estructurales asociadas a estados patológicos. A diferencia del análisis de expresión diferencial gen a gen, el enfoque de redes captura dependencias relacionales entre componentes y permite detectar módulos o \emph{hubs} cuya conectividad cambia entre condiciones \citet{ideker2012}.
+
+ En este trabajo se aplica dicho enfoque a dos redes metabólicas derivadas de datos metagenómicos: una correspondiente a individuos sanos y otra a individuos con una condición de enfermedad, con el objetivo de caracterizar las diferencias topológicas entre ambos estados.
+
+\section{Materiales y métodos}
+
+\subsection{Datos de entrada}
+
+Se utilizaron dos matrices de adyacencia en formato CSV:
+
+\begin{itemize}[leftmargin=*]
+    \item Red sana: \texttt{H\_adjcent\_path\_completeNET.csv}
+    \item Red enferma: \texttt{DD\_adjcent\_path\_completeNET.csv}
+\end{itemize}
+
+Cada matriz tiene dimensiones $619 \times 619$, donde las filas y columnas representan rutas metabólicas identificadas por sus códigos en la base de datos MetaCyc/HUMAnN (i.e., \texttt{PWY-7277}, \texttt{TRIGLSYN-PWY}). Los valores de entrada fueron binarizados: cualquier valor mayor que cero se codificó como 1 (arista presente) y cero como ausente.
+
+\subsection{Construcción de los grafos}
+
+Ambas matrices se alinearon al mismo conjunto de nodos mediante reindexación, completando con ceros las entradas faltantes. Se construyeron grafos no dirigidos con la biblioteca NetworkX \citep{hagberg2008}. El conjunto final compartido consta de 619 nodos.
+
+\subsection{Métricas topológicas globales}
+
+Para cada red se calcularon las siguientes métricas:
+
+\begin{itemize}[leftmargin=*]
+    \item Número de nodos y aristas.
+    \item Densidad de la red: proporción de aristas presentes respecto al máximo posible.
+    \item Grado promedio: promedio del número de conexiones por nodo.
+    \item Coeficiente de agrupamiento promedio (\emph{clustering}).
+    \item Número de componentes conectadas.
+    \item Tamaño del componente más grande (LCC, por sus siglas en inglés).
+\end{itemize}
+
+El camino promedio más corto no pudo calcularse por ser ambas redes desconectadas (múltiples componentes).
+
+\subsection{Análisis diferencial de aristas}
+
+Se calculó la matriz diferencial $\Delta = A_{\text{enfermo}} - A_{\text{sano}}$. Las aristas se clasificaron en tres categorías:
+
+\begin{itemize}[leftmargin=*]
+    \item Ganadas en la enfermedad: $\Delta = +1$.
+    \item Perdidas en la enfermedad: $\Delta = -1$.
+    \item Conservadas: presentes en ambas redes ($A_{\text{sano}} = 1$ y $A_{\text{enfermo}} = 1$).
+\end{itemize}
+
+Dado que las matrices son simétricas (grafo no dirigido), cada arista se contó una sola vez dividiendo la suma matricial entre dos. Adicionalmente, se calculó el cambio de grado por nodo, $\Delta k = k_{\text{enfermo}} - k_{\text{sano}}$, donde $k_{\text{enfermo}}$ y $k_{\text{sano}}$ representan los grados de cada nodo en las dos condiciones, para identificar los nodos con mayor ganancia o pérdida de conectividad.
+
+\subsection{Pruebas estadísticas}
+
+Se compararon las distribuciones de grado de ambas redes mediante tres pruebas no paramétricas:
+
+\begin{itemize}[leftmargin=*]
+    \item Kolmogorov-Smirnov (KS): contrasta si ambas distribuciones de grado provienen de la misma distribución subyacente.
+    \item Mann-Whitney U: prueba de suma de rangos para detectar diferencias en la ubicación de las distribuciones (hipótesis bilateral).
+    \item Wilcoxon de rangos con signo: prueba pareada sobre el vector de diferencias de grado $\Delta k$, excluyendo nodos con $\Delta k = 0$. Evalúa si la mediana de $\Delta k$ difiere de cero.
+\end{itemize}
+
+El nivel de significancia adoptado fue $\alpha = 0.05$. Para las pruebas no paramétricas se utilizó la biblioteca SciPy de Python \citep{virtanen2020}.
+
+\subsection{Prueba de permutación}
+
+Para evaluar si la diferencia observada en el grado promedio entre redes podía atribuirse al azar, se realizó una prueba de permutación siguiendo el enfoque descrito por \citet{jardim2019}. En cada iteración, se combinaron los grados de ambas redes en un único conjunto, se mezclaron aleatoriamente, se dividieron en dos grupos del tamaño original y se calculó la diferencia de medias. La proporción de permutaciones en las que esta diferencia excedió la observada se tomó como $p$-valor empírico.
+
+\subsection{Visualizaciones}
+
+Se generaron las siguientes visualizaciones\footnote{Para este reporte solo se incluyeron las últimas figuras; el resto está disponible en el notebook de Jupyter.}:
+
+\begin{itemize}[leftmargin=*]
+    \item Histogramas de distribución de grado para cada red.
+    \item Una representación de la red diferencial, donde las aristas ganadas se colorearon en verde y las perdidas en rojo discontinuo.
+    \item Histogramas superpuestos de ambas distribuciones, ECDF comparativas y distribución nula de la prueba de permutación con la diferencia observada marcada.
+\end{itemize}
+
+\section{Resultados}
+
+\subsection{Resumen topológico comparativo}
+
+La Tabla~\ref{tab:metricas} presenta las métricas topológicas globales de ambas redes. La red de individuos enfermos presentó sistemáticamente valores más altos en densidad, grado promedio y tamaño del componente más grande, con un número ligeramente menor de componentes conectadas.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{>{\raggedright\arraybackslash}p{0.38\linewidth}cc}
+        \toprule
+        \textbf{Métrica} & \textbf{Red Sana} & \textbf{Red Enferma} \\
+        \midrule
+        Nodos & 619 & 619 \\
+        Aristas & 876 & 1,215 \\
+        Densidad & 0.004580 & 0.006352 \\
+        Grado promedio & 2.8304 & 3.9257 \\
+        Clustering promedio & 0.303883 & 0.307501 \\
+        Componentes & 388 & 377 \\
+        LCC (nodos) & 51 & 66 \\
+        Camino promedio & N/A (desconectada) & N/A (desconectada) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Resumen de métricas topológicas globales de las redes sana y enferma. LCC: componente más grande.}
+    \label{tab:metricas}
+\end{table}
+
+\subsection{Análisis diferencial de aristas}
+
+Al comparar ambas redes, se identificaron 609 aristas ganadas en el estado de enfermedad, 270 aristas perdidas y 606 aristas conservadas (Tabla~\ref{tab:aristas}). Esto implica que aproximadamente el 50.1\% de las aristas de la red sana se mantienen en la red enferma, mientras que la red enferma incorpora casi el doble de aristas nuevas en relación con las que pierde.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Categoría} & \textbf{Número de aristas} \\
+        \midrule
+        Ganadas en la enfermedad & 609 \\
+        Perdidas en la enfermedad & 270 \\
+        Conservadas & 606 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Clasificación diferencial de aristas entre la red sana y la red enferma.}
+    \label{tab:aristas}
+\end{table}
+
+\subsection{Nodos con mayor cambio de conectividad}
+
+Los diez nodos con mayor ganancia de conectividad en el estado de enfermedad pasaron de un grado 0 (ausentes) en la red sana a un grado de 31 conexiones en la red enferma (Tabla~\ref{tab:nodos}). Entre estos se encuentran:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{PWY-7277}
+    \item \texttt{PWY-7433}
+    \item \texttt{PWY-7112}
+    \item \texttt{PWY-7185}
+    \item \texttt{PWY-7426}
+    \item \texttt{PWY-7434}
+    \item \texttt{PWY-6564}
+    \item \texttt{PWY-6569}
+    \item \texttt{PWY-6861}
+    \item \texttt{PWY-6555}
+\end{itemize}
+
+Por el contrario, los nodos con mayor pérdida de conectividad perdieron entre 13 y 15 conexiones. Destacan:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{TRIGLSYN-PWY}
+    \item \texttt{SPHINGOLIPID-SYN-PWY} 
+    \item \texttt{LYSINE-AMINOAD-PWY}
+    \item \texttt{NADSYN-PWY}
+    \item \texttt{PWY-6981}
+\end{itemize}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Nodo (Ruta metabólica)} & \textbf{$k$ sano} & \textbf{$k$ enfermo} & \textbf{$\Delta k$} \\
+        \midrule
+        \textcolor{blue}{\texttt{PWY-7277}} & 0 & 31 & +31 \\
+        \textcolor{blue}{\texttt{PWY-7433}} & 0 & 31 & +31 \\
+        \textcolor{blue}{\texttt{PWY-7112}} & 0 & 31 & +31 \\
+        \textcolor{red}{\texttt{TRIGLSYN-PWY}} & 15 & 0 & -15 \\
+        \textcolor{red}{\texttt{SPHINGOLIPID-SYN-PWY}} & 15 & 0 & -15 \\
+        \textcolor{red}{\texttt{LYSINE-AMINOAD-PWY}} & 15 & 0 & -15 \\
+        \textcolor{red}{\texttt{NADSYN-PWY}} & 15 & 0 & -15 \\
+        \textcolor{red}{\texttt{PWY-6981}} & 15 & 2 & -13 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Selección de nodos con mayor cambio de conectividad ($\Delta k$). Azul: mayor ganancia. Rojo: mayor pérdida.}
+    \label{tab:nodos}
+\end{table}
+
+\subsection{Pruebas estadísticas sobre distribuciones de grado}
+
+Los resultados de las tres pruebas no paramétricas se presentan en la Tabla~\ref{tab:pruebas}. Ninguna de las tres pruebas alcanzó significancia estadística al nivel $\alpha = 0.05$, lo que indica que las distribuciones de grado de ambas redes no difieren de forma detectablemente significativa con estas pruebas. Esta lectura es consistente con la Figura~\ref{fig:degree-comparison}, donde los histogramas superpuestos y las ECDF comparativas muestran un traslape amplio entre ambas condiciones, a pesar de un desplazamiento moderado de la red enferma hacia grados más altos.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Prueba} & \textbf{Estadístico} & \textbf{$p$-valor} \\
+        \midrule
+        Kolmogorov-Smirnov & 0.053312 & 0.3428 \\
+        Mann-Whitney U & 187,119.50 & 0.4480 \\
+        Wilcoxon de rangos con signo & 10,484.00 & 0.2586 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Resultados de las pruebas estadísticas no paramétricas. Ningún $p$-valor es inferior a $\alpha = 0.05$.}
+    \label{tab:pruebas}
+\end{table}
+
+\subsection{Prueba de permutación}
+
+La prueba de permutación (10,000 iteraciones) mostró que la diferencia de grado promedio observada entre la red enferma y la sana ($\Delta \bar{k} = 1.0953$) es estadísticamente significativa ($p = 0.0067$). Este resultado contrasta con el de las pruebas no paramétricas clásicas y sugiere que, aunque la forma global de las distribuciones de grado es similar, la magnitud de la diferencia entre las medias es mayor de lo esperable por azar. La Figura~\ref{fig:degree-comparison} resume visualmente la comparación entre ambas distribuciones de grado, mientras que la distribución nula generada por la prueba de permutación se muestra en la Figura~\ref{fig:perm-test}.
+
+\begin{figure}[ht]
+    \centering
+    \includesvg[width=0.95\linewidth]{figures/degree_comparison.svg}
+    \caption{Integración visual de los resultados: comparación de las distribuciones de grado entre redes mediante histogramas y ECDF, junto con la distribución nula de la prueba de permutación para la diferencia de medias.}
+    \label{fig:degree-comparison}
+\end{figure}
+
+
+\begin{figure}[ht]
+    \centering
+    \includesvg[width=0.6\linewidth]{figures/permutation_test.svg}
+    \caption{Prueba de permutación para la diferencia de medias de los grados. La distribución nula generada mediante permutaciones se muestra como histograma, y en rojo se indica la media observada.}
+    \label{fig:perm-test}
+\end{figure}
+
+En conjunto, las Figuras~\ref{fig:degree-comparison} y~\ref{fig:perm-test} permiten articular los dos hallazgos estadísticos principales del trabajo. Por un lado, el alto traslape visual entre las distribuciones explica que las pruebas KS, Mann-Whitney y Wilcoxon no detecten diferencias significativas en la forma general de los grados. Por otro, la distribución nula de la permutación se concentra alrededor de diferencias cercanas a cero, mientras que la diferencia observada del grado promedio se ubica en una región extrema, lo que respalda la significancia obtenida en la comparación de medias.
+
+\section{Discusión}
+
+Los resultados muestran que la red metabólica del estado de enfermedad es estructuralmente más densa y conectada que la del estado sano. El incremento en el número de aristas (de 876 a 1,215, un aumento del 38.7\%) y en el grado promedio (de 2.83 a 3.93) apunta a una mayor co-ocurrencia o activación funcional de rutas metabólicas en el microbioma de los individuos enfermos. El tamaño del componente más grande también creció (de 51 a 66 nodos), lo que indica una mayor interconexión entre módulos metabólicos.
+
+El coeficiente de agrupamiento promedio es prácticamente idéntico en ambas redes (0.3039 vs. 0.3075), lo que sugiere que la estructura local de vecindad no cambia sustancialmente entre condiciones. La diferencia topológica reside principalmente en la escala global de conectividad, no en la cohesión local.
+
+El análisis diferencial revela una asimetría notable: se ganan 609 aristas pero solo se pierden 270. Las rutas que pierden toda su conectividad en el estado enfermo, como \texttt{TRIGLSYN-PWY}, \texttt{SPHINGOLIPID-SYN-PWY} y \texttt{NADSYN-PWY}, son metabólicamente relevantes: involucran la síntesis de lípidos estructurales y cofactores esenciales \citep{agrawal2024wikipathways}, cuya desaparición podría reflejar cambios en la composición microbiana o en la capacidad funcional del microbioma.
+
+La discrepancia entre los resultados de las pruebas no paramétricas clásicas (no significativas) y la prueba de permutación (significativa) merece atención. Las pruebas KS y Mann-Whitney evalúan la forma y el orden de rangos de las distribuciones completas, que pueden ser similares globalmente incluso cuando la media difiere. La prueba de permutación, al enfocarse en la diferencia de medias, es más sensible a desplazamientos sistemáticos de la conectividad promedio. Esto es coherente con observar distribuciones de forma similar pero con una media mayor en la red enferma, patrón que queda resumido visualmente en la Figura~\ref{fig:degree-comparison}.
+
+La principal limitación del análisis es que las matrices de adyacencia se tratan como datos estáticos binarios, sin considerar la abundancia relativa de las rutas ni la variabilidad entre individuos. Futuros análisis podrían incorporar pesos en las aristas y evaluar la significancia a nivel de nodo individual mediante corrección por comparaciones múltiples.
+
+\section{Conclusiones}
+
+\begin{itemize}[leftmargin=*]
+    \item La red metabólica del estado de enfermedad es significativamente más densa y conectada que la del estado sano, con un incremento del 38.7\% en el número de aristas y un grado promedio 38.7\% mayor.
+    \item El análisis diferencial indica que la transición al estado enfermo supone una ganancia neta de conectividad: 609 aristas nuevas frente a 270 perdidas, con 606 conservadas.
+    \item Rutas metabólicas de síntesis lipídica (\texttt{TRIGLSYN-PWY}, \texttt{SPHINGOLIPID-SYN-PWY}) y biosíntesis de cofactores (\texttt{NADSYN-PWY}) \citep{agrawal2024wikipathways} pierden toda su conectividad en el estado de enfermedad, lo que puede tener relevancia biológica.
+    \item La prueba de permutación ($p = 0.0067$) confirmó que la diferencia de grado promedio observada es estadísticamente significativa, mientras que las pruebas distribucionales no paramétricas no detectaron diferencias significativas en la forma general de las distribuciones de grado.
+    \item El enfoque de redes metabólicas diferenciales es una herramienta útil para identificar cambios funcionales del microbioma asociados a estados de salud y enfermedad, y puede complementar análisis taxonómicos y de expresión génica.
+\end{itemize}
+
+\section{Código}
+El análisis de la red fue realizado en un notebook de jupyter. El código esta disponible en el repositorio \url{google.com}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
