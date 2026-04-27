@@ -1,10 +1,6 @@
 # Análisis Comparativo de Redes Metabólicas: Sano vs. Enfermo
 
-Este repositorio contiene un análisis computacional de las propiedades
-topológicas de redes de rutas metabólicas reconstruidas a partir de datos
-metagenómicos. El estudio compara la estructura de estas redes en individuos
-sanos frente a individuos enfermos, utilizando herramientas de teoría de grafos
-y estadística.
+El código original se trabajo en [google colab](https://colab.research.google.com/drive/1iwYtVKtxozITQX-2XOf9PL0DF0oI-vnB?usp=sharing)
 
 ## Requisitos y Dependencias
 
